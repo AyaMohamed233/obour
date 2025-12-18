@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | Luxury Bags</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../index.html" class="navbar-brand">LUXURY BAGS</a>
+            <div class="navbar-actions">
+                <a href="cart.html" class="navbar-icon"><i class="fas fa-arrow-left"></i> Back to Cart</a>
+            </div>
+        </div>
+    </nav>
+
+    <section style="padding: calc(72px + 3rem) 0 4rem; min-height: 100vh;">
+        <div class="container" style="max-width: 1000px;">
+            <h1 style="font-size: 2rem; margin-bottom: 2rem;">Checkout</h1>
+
+            <form id="checkout-form" style="display: grid; grid-template-columns: 1fr 380px; gap: 2rem;">
+                <!-- Left Column -->
+                <div>
+                    <!-- Shipping Address -->
+                    <div
+                        style="background: var(--color-surface); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem;">Shipping Address</h3>
+                        <div id="addresses-list"></div>
+                        <div id="new-address-form" style="display: none;">
+                            <div class="form-group"><label class="form-label">Full Name</label><input type="text"
+                                    class="form-input" id="addr-name" required></div>
+                            <div class="form-group"><label class="form-label">Phone</label><input type="tel"
+                                    class="form-input" id="addr-phone" required></div>
+                            <div class="form-group"><label class="form-label">Governorate</label>
+                                <select class="form-input" id="addr-gov" required>
+                                    <option value="">Select</option>
+                                    <option value="Cairo">Cairo</option>
+                                    <option value="Alexandria">Alexandria</option>
+                                    <option value="Giza">Giza</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label class="form-label">City</label><input type="text"
+                                    class="form-input" id="addr-city" required></div>
+                            <div class="form-group"><label class="form-label">Address</label><textarea
+                                    class="form-input" id="addr-line" rows="2" required></textarea></div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAddressForm()"
+                            id="add-address-btn">+ Add New Address</button>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div
+                        style="background: var(--color-surface); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem;">Payment Method</h3>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <label
+                                style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: var(--color-bg); border-radius: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="payment" value="cod" checked> <i
+                                    class="fas fa-money-bill-wave"></i> Cash on Delivery
+                            </label>
+                            <label
+                                style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: var(--color-bg); border-radius: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="payment" value="card"> <i class="fas fa-credit-card"></i>
+                                Credit/Debit Card
+                            </label>
+                        </div>
+                        <div id="card-element"
+                            style="display: none; margin-top: 1rem; padding: 1rem; background: var(--color-bg); border-radius: 0.5rem;">
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div style="background: var(--color-surface); padding: 1.5rem; border-radius: 1rem;">
+                        <h3 style="margin-bottom: 1rem;">Order Notes (Optional)</h3>
+                        <textarea class="form-input" id="order-notes" rows="3"
+                            placeholder="Special delivery instructions..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Right Column - Order Summary -->
+                <div
+                    style="background: var(--color-surface); padding: 1.5rem; border-radius: 1rem; height: fit-content; position: sticky; top: 100px;">
+                    <h3 style="margin-bottom: 1rem;">Order Summary</h3>
+                    <div id="order-items"></div>
+                    <div style="border-top: 1px solid var(--glass-border); padding-top: 1rem; margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Subtotal</span><span id="subtotal">0</span></div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Shipping</span><span id="shipping">0</span></div>
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 700; color: var(--color-accent); padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                            <span>Total</span><span id="total">0</span></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-full" style="margin-top: 1.5rem;"
+                        id="place-order-btn">Place Order</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        let cart = [], addresses = [], selectedAddressId = null, stripe, cardElement;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await Auth.getUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+
+            await Promise.all([loadCart(), loadAddresses(), loadShipping()]);
+            setupPayment();
+        });
+
+        async function loadCart() {
+            cart = await API.getCart();
+            if (!cart.length) { window.location.href = 'cart.html'; return; }
+
+            const subtotal = cart.reduce((s, i) => s + i.line_total, 0);
+            const shipping = subtotal >= 500 ? 0 : 50;
+
+            document.getElementById('order-items').innerHTML = cart.map(i => `
+                <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem;">
+                    <img src="${i.product_image || 'https://via.placeholder.com/50'}" style="width: 50px; height: 50px; border-radius: 0.25rem; object-fit: cover;">
+                    <div style="flex: 1;"><p style="font-size: 0.875rem;">${i.product_name}</p><p style="font-size: 0.75rem; color: var(--color-text-muted);">x${i.quantity}</p></div>
+                    <span>${Utils.formatPrice(i.line_total)}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('subtotal').textContent = Utils.formatPrice(subtotal);
+            document.getElementById('shipping').innerHTML = shipping ? Utils.formatPrice(shipping) : '<span style="color:var(--color-success);">FREE</span>';
+            document.getElementById('total').textContent = Utils.formatPrice(subtotal + shipping);
+        }
+
+        async function loadAddresses() {
+            addresses = await API.getAddresses();
+            const container = document.getElementById('addresses-list');
+
+            if (addresses.length) {
+                selectedAddressId = addresses[0].id;
+                container.innerHTML = addresses.map(a => `
+                    <label style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem; background: var(--color-bg); border-radius: 0.5rem; margin-bottom: 0.5rem; cursor: pointer;">
+                        <input type="radio" name="address" value="${a.id}" ${a.is_default ? 'checked' : ''} onchange="selectedAddressId='${a.id}'">
+                        <div><strong>${a.recipient_name}</strong><br><span style="font-size: 0.875rem; color: var(--color-text-muted);">${a.address_line1}, ${a.city}, ${a.governorate}</span></div>
+                    </label>
+                `).join('');
+            } else {
+                document.getElementById('new-address-form').style.display = 'block';
+                document.getElementById('add-address-btn').style.display = 'none';
+            }
+        }
+
+        async function loadShipping() {
+            // Shipping methods already handled in loadCart
+        }
+
+        function toggleAddressForm() {
+            const form = document.getElementById('new-address-form');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function setupPayment() {
+            document.querySelectorAll('input[name="payment"]').forEach(r => {
+                r.addEventListener('change', (e) => {
+                    const cardEl = document.getElementById('card-element');
+                    if (e.target.value === 'card') {
+                        cardEl.style.display = 'block';
+                        if (!stripe) {
+                            // Note: This is a placeholder - you need to add your Stripe publishable key
+                            stripe = Stripe('pk_test_placeholder');
+                            const elements = stripe.elements();
+                            cardElement = elements.create('card', { style: { base: { color: '#E8E4E0', fontSize: '16px' } } });
+                            cardElement.mount('#card-element');
+                        }
+                    } else {
+                        cardEl.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('place-order-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                // Check if new address needs to be saved
+                if (!selectedAddressId) {
+                    const newAddr = await API.addAddress({
+                        recipient_name: document.getElementById('addr-name').value,
+                        phone: document.getElementById('addr-phone').value,
+                        governorate: document.getElementById('addr-gov').value,
+                        city: document.getElementById('addr-city').value,
+                        address_line1: document.getElementById('addr-line').value,
+                        is_default: true
+                    });
+                    selectedAddressId = newAddr.id;
+                }
+
+                const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+                const notes = document.getElementById('order-notes').value;
+
+                // Get default shipping method (first one)
+                const shippingMethods = await API.getShippingMethods();
+                const shippingId = shippingMethods[0]?.id;
+
+                const orderId = await API.createOrder(selectedAddressId, paymentMethod, shippingId, null, notes);
+
+                Utils.showToast('Order placed successfully!', 'success');
+                setTimeout(() => window.location.href = `order-success.html?id=${orderId}`, 1500);
+            } catch (error) {
+                Utils.showToast(error.message || 'Failed to place order', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Place Order';
+            }
+        });
+    </script>
+</body>
+
+</html>

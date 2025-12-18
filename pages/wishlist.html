@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wishlist | Luxury Bags</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../index.html" class="navbar-brand">LUXURY BAGS</a>
+            <ul class="navbar-nav">
+                <li><a href="../index.html" class="navbar-link">Home</a></li>
+                <li><a href="products.html" class="navbar-link">Shop</a></li>
+                <li><a href="sale.html" class="navbar-link">Sale</a></li>
+            </ul>
+            <div class="navbar-actions">
+                <a href="wishlist.html" class="navbar-icon"><i class="fas fa-heart"></i></a>
+                <a href="cart.html" class="navbar-icon"><i class="fas fa-shopping-bag"></i></a>
+            </div>
+        </div>
+    </nav>
+
+    <section style="padding: calc(72px + 3rem) 0 4rem; min-height: 100vh;">
+        <div class="container">
+            <h1 style="font-size: 2rem; margin-bottom: 2rem;">My Wishlist</h1>
+            <div class="products-grid grid grid-cols-4 gap-6" id="wishlist-grid">
+                <div class="skeleton" style="height: 380px;"></div>
+                <div class="skeleton" style="height: 380px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await Auth.getUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+            loadWishlist();
+        });
+
+        async function loadWishlist() {
+            const grid = document.getElementById('wishlist-grid');
+            try {
+                const items = await API.getWishlist();
+                if (!items.length) {
+                    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:4rem;"><i class="fas fa-heart" style="font-size:3rem;color:var(--color-text-muted);margin-bottom:1rem;display:block;"></i><h2>Wishlist is empty</h2><a href="products.html" class="btn btn-primary" style="margin-top:1rem;">Browse Products</a></div>';
+                    return;
+                }
+                grid.innerHTML = items.map(item => {
+                    const p = item.product;
+                    const img = p.images?.find(i => i.is_primary)?.image_url || 'https://via.placeholder.com/400';
+                    return `
+                        <article class="product-card">
+                            <div class="product-card-image">
+                                <a href="product.html?slug=${p.slug}"><img src="${img}" alt="${p.name}" loading="lazy"></a>
+                                <button onclick="removeFromWishlist('${p.id}')" style="position:absolute;top:1rem;right:1rem;background:var(--color-error);color:#fff;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="product-card-content">
+                                <h3 class="product-card-title"><a href="product.html?slug=${p.slug}">${p.name}</a></h3>
+                                <div class="product-card-price"><span class="current">${Utils.formatPrice(p.price)}</span></div>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            } catch (e) { grid.innerHTML = '<p>Failed to load wishlist</p>'; }
+        }
+
+        async function removeFromWishlist(productId) {
+            try {
+                await API.removeFromWishlist(productId);
+                Utils.showToast('Removed from wishlist', 'info');
+                loadWishlist();
+            } catch (e) { Utils.showToast(e.message, 'error'); }
+        }
+    </script>
+    <style>
+        @media (max-width: 768px) {
+            .products-grid.grid-cols-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</body>
+
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account | Luxury Bags</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../index.html" class="navbar-brand">LUXURY BAGS</a>
+            <ul class="navbar-nav">
+                <li><a href="../index.html" class="navbar-link">Home</a></li>
+                <li><a href="products.html" class="navbar-link">Shop</a></li>
+                <li><a href="sale.html" class="navbar-link">Sale</a></li>
+            </ul>
+            <div class="navbar-actions">
+                <a href="cart.html" class="navbar-icon"><i class="fas fa-shopping-bag"></i></a>
+            </div>
+        </div>
+    </nav>
+
+    <section style="padding: calc(72px + 3rem) 0 4rem; min-height: 100vh;">
+        <div class="container" style="max-width: 1000px;">
+            <div style="display: grid; grid-template-columns: 250px 1fr; gap: 2rem;">
+                <!-- Sidebar -->
+                <aside
+                    style="background: var(--color-surface); padding: 1.5rem; border-radius: 1rem; height: fit-content;">
+                    <div style="text-align: center; margin-bottom: 1.5rem;">
+                        <div style="width: 80px; height: 80px; background: var(--color-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 2rem; color: var(--color-bg);"
+                            id="user-avatar">U</div>
+                        <h3 id="user-name">User</h3>
+                        <p style="color: var(--color-text-muted); font-size: 0.875rem;" id="user-email">user@email.com
+                        </p>
+                    </div>
+                    <nav style="display: flex; flex-direction: column; gap: 0.25rem;">
+                        <a href="#orders" class="account-nav-link active" onclick="showTab('orders')"><i
+                                class="fas fa-box"></i> Orders</a>
+                        <a href="#profile" class="account-nav-link" onclick="showTab('profile')"><i
+                                class="fas fa-user"></i> Profile</a>
+                        <a href="#addresses" class="account-nav-link" onclick="showTab('addresses')"><i
+                                class="fas fa-map-marker-alt"></i> Addresses</a>
+                        <a href="wishlist.html" class="account-nav-link"><i class="fas fa-heart"></i> Wishlist</a>
+                        <button onclick="logout()" class="account-nav-link"
+                            style="background: none; border: none; color: var(--color-error); text-align: left; cursor: pointer;"><i
+                                class="fas fa-sign-out-alt"></i> Logout</button>
+                    </nav>
+                </aside>
+
+                <!-- Content -->
+                <main>
+                    <!-- Orders Tab -->
+                    <div id="orders-tab" class="account-tab active">
+                        <h2 style="margin-bottom: 1.5rem;">My Orders</h2>
+                        <div id="orders-list">
+                            <div class="skeleton" style="height: 100px; margin-bottom: 1rem;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Tab -->
+                    <div id="profile-tab" class="account-tab" style="display: none;">
+                        <h2 style="margin-bottom: 1.5rem;">Profile Settings</h2>
+                        <form id="profile-form" style="max-width: 500px;">
+                            <div class="form-group"><label class="form-label">Full Name</label><input type="text"
+                                    class="form-input" id="profile-name"></div>
+                            <div class="form-group"><label class="form-label">Phone</label><input type="tel"
+                                    class="form-input" id="profile-phone"></div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+
+                    <!-- Addresses Tab -->
+                    <div id="addresses-tab" class="account-tab" style="display: none;">
+                        <h2 style="margin-bottom: 1.5rem;">My Addresses</h2>
+                        <div id="addresses-list"></div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </section>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        let profile = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await Auth.getUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+
+            profile = await API.getProfile();
+            document.getElementById('user-name').textContent = profile?.full_name || 'User';
+            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('user-avatar').textContent = (profile?.full_name || 'U')[0].toUpperCase();
+            document.getElementById('profile-name').value = profile?.full_name || '';
+            document.getElementById('profile-phone').value = profile?.phone || '';
+
+            loadOrders();
+            loadAddresses();
+        });
+
+        function showTab(tab) {
+            document.querySelectorAll('.account-tab').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.account-nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(`${tab}-tab`).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        async function loadOrders() {
+            const container = document.getElementById('orders-list');
+            try {
+                const orders = await API.getOrders();
+                if (!orders.length) {
+                    container.innerHTML = '<p style="color: var(--color-text-muted);">No orders yet. <a href="products.html">Start shopping</a></p>';
+                    return;
+                }
+                container.innerHTML = orders.map(o => `
+                    <div style="background: var(--color-surface); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                            <div><strong>Order #${o.order_number}</strong><p style="font-size: 0.875rem; color: var(--color-text-muted);">${Utils.formatDate(o.created_at)}</p></div>
+                            <span class="badge badge-${o.status === 'delivered' ? 'success' : o.status === 'cancelled' ? 'error' : 'primary'}">${o.status}</span>
+                        </div>
+                        <p style="font-size: 0.875rem; color: var(--color-text-muted);">${o.items?.length || 0} items</p>
+                        <p style="color: var(--color-accent); font-weight: 600;">${Utils.formatPrice(o.total_amount)}</p>
+                    </div>
+                `).join('');
+            } catch (e) { container.innerHTML = '<p>Failed to load orders</p>'; }
+        }
+
+        async function loadAddresses() {
+            const container = document.getElementById('addresses-list');
+            try {
+                const addresses = await API.getAddresses();
+                if (!addresses.length) {
+                    container.innerHTML = '<p style="color: var(--color-text-muted);">No saved addresses.</p>';
+                    return;
+                }
+                container.innerHTML = addresses.map(a => `
+                    <div style="background: var(--color-surface); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
+                        <p><strong>${a.recipient_name}</strong> ${a.is_default ? '<span class="badge badge-accent">Default</span>' : ''}</p>
+                        <p style="font-size: 0.875rem; color: var(--color-text-muted);">${a.address_line1}, ${a.city}, ${a.governorate}</p>
+                        <p style="font-size: 0.875rem; color: var(--color-text-muted);">${a.phone}</p>
+                    </div>
+                `).join('');
+            } catch (e) { container.innerHTML = '<p>Failed to load addresses</p>'; }
+        }
+
+        document.getElementById('profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await API.updateProfile({ full_name: document.getElementById('profile-name').value, phone: document.getElementById('profile-phone').value });
+                Utils.showToast('Profile updated!', 'success');
+            } catch (e) { Utils.showToast('Failed to update', 'error'); }
+        });
+
+        async function logout() {
+            await Auth.signOut();
+            window.location.href = 'login.html';
+        }
+    </script>
+    <style>
+        .account-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--color-text-muted);
+            border-radius: 0.5rem;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .account-nav-link:hover,
+        .account-nav-link.active {
+            background: var(--color-bg);
+            color: var(--color-accent);
+        }
+
+        .account-nav-link i {
+            width: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container>div {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
+</body>
+
+</html>

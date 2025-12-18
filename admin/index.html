@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Luxury Bags</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body style="background: var(--color-bg);">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-brand">ADMIN</div>
+        <nav class="sidebar-nav">
+            <a href="#" class="sidebar-link active" data-section="dashboard"><i class="fas fa-chart-line"></i>
+                Dashboard</a>
+            <a href="#" class="sidebar-link" data-section="orders"><i class="fas fa-box"></i> Orders</a>
+            <a href="#" class="sidebar-link" data-section="products"><i class="fas fa-tag"></i> Products</a>
+            <a href="#" class="sidebar-link" data-section="customers"><i class="fas fa-users"></i> Customers</a>
+            <a href="../index.html" class="sidebar-link"><i class="fas fa-store"></i> View Store</a>
+            <a href="#" class="sidebar-link" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="admin-section active">
+            <h1>Dashboard</h1>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="stat-info"><span class="stat-value" id="total-orders">0</span><span
+                            class="stat-label">Total Orders</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                    <div class="stat-info"><span class="stat-value" id="total-revenue">0</span><span
+                            class="stat-label">Total Revenue</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-info"><span class="stat-value" id="total-customers">0</span><span
+                            class="stat-label">Customers</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-tag"></i></div>
+                    <div class="stat-info"><span class="stat-value" id="total-products">0</span><span
+                            class="stat-label">Products</span></div>
+                </div>
+            </div>
+            <div class="recent-orders">
+                <h2>Recent Orders</h2>
+                <div id="recent-orders-list" class="orders-table"></div>
+            </div>
+        </section>
+
+        <!-- Orders Section -->
+        <section id="orders-section" class="admin-section">
+            <h1>Orders</h1>
+            <div class="table-filters">
+                <select id="order-status-filter" class="form-input" style="width: auto;">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div id="orders-table" class="orders-table"></div>
+        </section>
+
+        <!-- Products Section -->
+        <section id="products-section" class="admin-section">
+            <h1>Products</h1>
+            <div id="products-table" class="products-table"></div>
+        </section>
+
+        <!-- Customers Section -->
+        <section id="customers-section" class="admin-section">
+            <h1>Customers</h1>
+            <div id="customers-table" class="customers-table"></div>
+        </section>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await Auth.getUser();
+            if (!user) { window.location.href = '../pages/login.html'; return; }
+
+            // Check if admin
+            const profile = await API.getProfile();
+            if (!profile?.is_admin) { window.location.href = '../index.html'; return; }
+
+            loadDashboard();
+            setupNavigation();
+        });
+
+        function setupNavigation() {
+            document.querySelectorAll('.sidebar-link[data-section]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = link.dataset.section;
+                    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+                    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+                    document.getElementById(`${section}-section`).classList.add('active');
+                    link.classList.add('active');
+
+                    if (section === 'orders') loadOrders();
+                    if (section === 'products') loadProducts();
+                    if (section === 'customers') loadCustomers();
+                });
+            });
+        }
+
+        async function loadDashboard() {
+            // Load stats
+            const { data: orders } = await supabaseClient.from('orders').select('id, total_amount');
+            const { data: customers } = await supabaseClient.from('profiles').select('id');
+            const { data: products } = await supabaseClient.from('products').select('id');
+
+            document.getElementById('total-orders').textContent = orders?.length || 0;
+            document.getElementById('total-revenue').textContent = Utils.formatPrice(orders?.reduce((s, o) => s + (o.total_amount || 0), 0) || 0);
+            document.getElementById('total-customers').textContent = customers?.length || 0;
+            document.getElementById('total-products').textContent = products?.length || 0;
+
+            // Recent orders
+            const { data: recentOrders } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false }).limit(5);
+            document.getElementById('recent-orders-list').innerHTML = renderOrdersTable(recentOrders || []);
+        }
+
+        async function loadOrders() {
+            const { data: orders } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
+            document.getElementById('orders-table').innerHTML = renderOrdersTable(orders || []);
+        }
+
+        function renderOrdersTable(orders) {
+            if (!orders.length) return '<p style="color: var(--color-text-muted);">No orders found</p>';
+            return `<table class="data-table"><thead><tr><th>Order #</th><th>Date</th><th>Status</th><th>Payment</th><th>Total</th><th>Actions</th></tr></thead><tbody>${orders.map(o => `<tr><td>#${o.order_number}</td><td>${Utils.formatDate(o.created_at)}</td><td><span class="badge badge-${o.status === 'delivered' ? 'success' : o.status === 'cancelled' ? 'error' : 'primary'}">${o.status}</span></td><td>${o.payment_method}</td><td>${Utils.formatPrice(o.total_amount)}</td><td><select onchange="updateOrderStatus('${o.id}', this.value)" class="form-input" style="width:auto;padding:0.25rem;"><option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Pending</option><option value="confirmed" ${o.status === 'confirmed' ? 'selected' : ''}>Confirmed</option><option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>Shipped</option><option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Delivered</option><option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Cancelled</option></select></td></tr>`).join('')}</tbody></table>`;
+        }
+
+        async function updateOrderStatus(orderId, status) {
+            try {
+                await supabaseClient.from('orders').update({ status }).eq('id', orderId);
+                Utils.showToast('Order updated!', 'success');
+            } catch (e) { Utils.showToast('Failed to update', 'error'); }
+        }
+
+        async function loadProducts() {
+            const { data: products } = await supabaseClient.from('products').select('*, category:categories(name)').order('created_at', { ascending: false });
+            document.getElementById('products-table').innerHTML = products?.length ? `<table class="data-table"><thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th></tr></thead><tbody>${products.map(p => `<tr><td>${p.name}</td><td>${p.category?.name || '-'}</td><td>${Utils.formatPrice(p.price)}</td><td>${p.total_stock || 0}</td><td><span class="badge badge-${p.is_active ? 'success' : 'error'}">${p.is_active ? 'Active' : 'Inactive'}</span></td></tr>`).join('')}</tbody></table>` : '<p>No products</p>';
+        }
+
+        async function loadCustomers() {
+            const { data: customers } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
+            document.getElementById('customers-table').innerHTML = customers?.length ? `<table class="data-table"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th>Orders</th></tr></thead><tbody>${customers.map(c => `<tr><td>${c.full_name || 'N/A'}</td><td>${c.email || '-'}</td><td>${c.phone || '-'}</td><td>${Utils.formatDate(c.created_at)}</td><td>${c.total_orders || 0}</td></tr>`).join('')}</tbody></table>` : '<p>No customers</p>';
+        }
+
+        async function logout() { await Auth.signOut(); window.location.href = '../pages/login.html'; }
+    </script>
+    <style>
+        .admin-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 220px;
+            background: var(--color-surface);
+            padding: 1.5rem;
+        }
+
+        .sidebar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--color-text-muted);
+            border-radius: 0.5rem;
+            text-decoration: none;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background: var(--color-bg);
+            color: var(--color-accent);
+        }
+
+        .admin-main {
+            margin-left: 220px;
+            padding: 2rem;
+        }
+
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        .admin-section h1 {
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--color-surface);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(201, 169, 98, 0.1);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-accent);
+            font-size: 1.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--color-surface);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .data-table th {
+            background: var(--color-bg);
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+
+        .table-filters {
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                width: 100%;
+                position: relative;
+            }
+
+            .admin-main {
+                margin-left: 0;
+            }
+        }
+    </style>
+</body>
+
+</html>

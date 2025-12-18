@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sale | Luxury Bags</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../index.html" class="navbar-brand">LUXURY BAGS</a>
+            <ul class="navbar-nav">
+                <li><a href="../index.html" class="navbar-link">Home</a></li>
+                <li><a href="products.html" class="navbar-link">Shop</a></li>
+                <li><a href="sale.html" class="navbar-link active">Sale</a></li>
+                <li><a href="contact.html" class="navbar-link">Contact</a></li>
+            </ul>
+            <div class="navbar-actions">
+                <a href="cart.html" class="navbar-icon"><i class="fas fa-shopping-bag"></i></a>
+                <a href="login.html" class="navbar-icon"><i class="far fa-user"></i></a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Banner -->
+    <section
+        style="padding: calc(72px + 4rem) 0 4rem; background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg) 100%); text-align: center;">
+        <div class="container">
+            <span
+                style="display: inline-block; padding: 0.5rem 1.5rem; background: var(--color-error); border-radius: 2rem; font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem;">LIMITED
+                TIME</span>
+            <h1 style="font-size: 3rem; margin-bottom: 1rem;">Season Sale</h1>
+            <p style="color: var(--color-text-muted); font-size: 1.25rem; margin-bottom: 2rem;">Up to 25% off on
+                selected items</p>
+        </div>
+    </section>
+
+    <!-- Products -->
+    <section class="section">
+        <div class="container">
+            <div class="products-grid grid grid-cols-4 gap-6" id="sale-products">
+                <div class="skeleton" style="height: 380px;"></div>
+                <div class="skeleton" style="height: 380px;"></div>
+                <div class="skeleton" style="height: 380px;"></div>
+                <div class="skeleton" style="height: 380px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadSaleProducts);
+
+        async function loadSaleProducts() {
+            const grid = document.getElementById('sale-products');
+            try {
+                const sales = await API.getSaleProducts(20);
+                if (!sales.length) {
+                    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--color-text-muted);padding:3rem;">No sale items available right now.</p>';
+                    return;
+                }
+                grid.innerHTML = sales.map(sale => {
+                    const p = sale.product;
+                    const discount = Math.round(sale.sale_percentage);
+                    const salePrice = sale.sale_price || (sale.original_price * (1 - sale.sale_percentage / 100));
+                    const img = p.images?.find(i => i.is_primary)?.image_url || p.images?.[0]?.image_url || 'https://via.placeholder.com/400';
+                    return `
+                        <article class="product-card">
+                            <div class="product-card-image">
+                                <a href="product.html?slug=${p.slug}"><img src="${img}" alt="${p.name}" loading="lazy"></a>
+                                <span class="product-card-badge sale">-${discount}%</span>
+                            </div>
+                            <div class="product-card-content">
+                                ${p.brand ? `<div class="product-card-brand">${p.brand.name}</div>` : ''}
+                                <h3 class="product-card-title"><a href="product.html?slug=${p.slug}">${p.name}</a></h3>
+                                <div class="product-card-price">
+                                    <span class="current">${Utils.formatPrice(salePrice)}</span>
+                                    <span class="original">${Utils.formatPrice(sale.original_price)}</span>
+                                </div>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            } catch (error) {
+                grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;">Failed to load sale products</p>';
+            }
+        }
+    </script>
+    <style>
+        @media (max-width: 768px) {
+            .products-grid.grid-cols-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</body>
+
+</html>

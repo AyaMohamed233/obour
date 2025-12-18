@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us | Luxury Bags</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../index.html" class="navbar-brand">LUXURY BAGS</a>
+            <ul class="navbar-nav">
+                <li><a href="../index.html" class="navbar-link">Home</a></li>
+                <li><a href="products.html" class="navbar-link">Shop</a></li>
+                <li><a href="sale.html" class="navbar-link">Sale</a></li>
+                <li><a href="contact.html" class="navbar-link active">Contact</a></li>
+            </ul>
+            <div class="navbar-actions">
+                <a href="cart.html" class="navbar-icon"><i class="fas fa-shopping-bag"></i></a>
+                <a href="login.html" class="navbar-icon"><i class="far fa-user"></i></a>
+            </div>
+        </div>
+    </nav>
+
+    <section style="padding: calc(72px + 4rem) 0 4rem; min-height: 100vh;">
+        <div class="container" style="max-width: 900px;">
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <h1>Contact Us</h1>
+                <p style="color: var(--color-text-muted); margin-top: 0.5rem;">We'd love to hear from you</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+                <!-- Contact Info -->
+                <div>
+                    <div
+                        style="background: var(--color-surface); padding: 2rem; border-radius: 1rem; margin-bottom: 1.5rem;">
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                            <i class="fas fa-map-marker-alt"
+                                style="color: var(--color-accent); font-size: 1.25rem; margin-top: 0.25rem;"></i>
+                            <div>
+                                <h4>Address</h4>
+                                <p style="color: var(--color-text-muted); font-size: 0.875rem;">Cairo, Egypt</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                            <i class="fas fa-phone"
+                                style="color: var(--color-accent); font-size: 1.25rem; margin-top: 0.25rem;"></i>
+                            <div>
+                                <h4>Phone</h4>
+                                <p style="color: var(--color-text-muted); font-size: 0.875rem;">+20 123 456 7890</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                            <i class="fas fa-envelope"
+                                style="color: var(--color-accent); font-size: 1.25rem; margin-top: 0.25rem;"></i>
+                            <div>
+                                <h4>Email</h4>
+                                <p style="color: var(--color-text-muted); font-size: 0.875rem;">info@luxurybags.com</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <i class="fab fa-whatsapp"
+                                style="color: var(--color-accent); font-size: 1.25rem; margin-top: 0.25rem;"></i>
+                            <div>
+                                <h4>WhatsApp</h4>
+                                <p style="color: var(--color-text-muted); font-size: 0.875rem;">+20 123 456 7890</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <a href="#"
+                            style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--color-surface); border-radius: 50%; color: var(--color-text);"><i
+                                class="fab fa-facebook-f"></i></a>
+                        <a href="#"
+                            style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--color-surface); border-radius: 50%; color: var(--color-text);"><i
+                                class="fab fa-instagram"></i></a>
+                        <a href="#"
+                            style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--color-surface); border-radius: 50%; color: var(--color-text);"><i
+                                class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+
+                <!-- Contact Form -->
+                <div style="background: var(--color-surface); padding: 2rem; border-radius: 1rem;">
+                    <h3 style="margin-bottom: 1.5rem;">Send a Message</h3>
+                    <form id="contact-form">
+                        <div class="form-group"><label class="form-label">Name</label><input type="text"
+                                class="form-input" id="contact-name" required></div>
+                        <div class="form-group"><label class="form-label">Email</label><input type="email"
+                                class="form-input" id="contact-email" required></div>
+                        <div class="form-group">
+                            <label class="form-label">Subject</label>
+                            <select class="form-input" id="contact-category">
+                                <option value="general">General Inquiry</option>
+                                <option value="order_inquiry">Order Question</option>
+                                <option value="return_request">Return Request</option>
+                                <option value="feedback">Feedback</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label class="form-label">Message</label><textarea class="form-input"
+                                id="contact-message" rows="4" required></textarea></div>
+                        <button type="submit" class="btn btn-primary btn-lg w-full">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        document.getElementById('contact-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                await API.submitContactForm({
+                    name: document.getElementById('contact-name').value,
+                    email: document.getElementById('contact-email').value,
+                    category: document.getElementById('contact-category').value,
+                    message: document.getElementById('contact-message').value
+                });
+                Utils.showToast('Message sent successfully!', 'success');
+                e.target.reset();
+            } catch (error) {
+                Utils.showToast('Failed to send message', 'error');
+            }
+            btn.disabled = false;
+            btn.textContent = 'Send Message';
+        });
+    </script>
+</body>
+
+</html>

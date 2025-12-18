@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart | Luxury Bags</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../index.html" class="navbar-brand">LUXURY BAGS</a>
+            <ul class="navbar-nav">
+                <li><a href="../index.html" class="navbar-link">Home</a></li>
+                <li><a href="products.html" class="navbar-link">Shop</a></li>
+                <li><a href="sale.html" class="navbar-link">Sale</a></li>
+            </ul>
+            <div class="navbar-actions">
+                <a href="cart.html" class="navbar-icon"><i class="fas fa-shopping-bag"></i></a>
+            </div>
+        </div>
+    </nav>
+
+    <section style="padding: calc(72px + 3rem) 0 4rem; min-height: 100vh;">
+        <div class="container">
+            <h1 style="font-size: 2rem; margin-bottom: 2rem;">Shopping Cart</h1>
+            <div id="cart-content">
+                <div class="skeleton" style="height: 120px; margin-bottom: 1rem;"></div>
+                <div class="skeleton" style="height: 120px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await Auth.getUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+            loadCart();
+        });
+
+        async function loadCart() {
+            const container = document.getElementById('cart-content');
+            try {
+                const items = await API.getCart();
+                if (!items.length) {
+                    container.innerHTML = `<div style="text-align:center;padding:4rem;"><i class="fas fa-shopping-bag" style="font-size:3rem;color:var(--color-text-muted);margin-bottom:1rem;display:block;"></i><h2>Cart is empty</h2><a href="products.html" class="btn btn-primary" style="margin-top:1rem;">Shop Now</a></div>`;
+                    return;
+                }
+                const subtotal = items.reduce((s, i) => s + i.line_total, 0);
+                const shipping = subtotal >= 500 ? 0 : 50;
+                container.innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 350px;gap:2rem;">
+                        <div>${items.map(i => `
+                            <div style="display:flex;gap:1rem;padding:1rem;background:var(--color-surface);border-radius:0.75rem;margin-bottom:1rem;">
+                                <img src="${i.product_image || 'https://via.placeholder.com/80'}" style="width:80px;height:80px;object-fit:cover;border-radius:0.5rem;">
+                                <div style="flex:1;"><h4>${i.product_name}</h4><p style="color:var(--color-text-muted);font-size:0.875rem;">${i.color_name}</p><p style="color:var(--color-accent);">${Utils.formatPrice(i.sale_price || i.unit_price)}</p></div>
+                                <div style="display:flex;align-items:center;gap:0.5rem;background:var(--color-bg);padding:0.5rem;border-radius:0.5rem;">
+                                    <button onclick="updateQty('${i.cart_item_id}',${i.quantity - 1})" style="background:none;border:none;color:var(--color-text);cursor:pointer;">−</button>
+                                    <span>${i.quantity}</span>
+                                    <button onclick="updateQty('${i.cart_item_id}',${i.quantity + 1})" style="background:none;border:none;color:var(--color-text);cursor:pointer;">+</button>
+                                </div>
+                                <span style="min-width:80px;text-align:right;font-weight:600;">${Utils.formatPrice(i.line_total)}</span>
+                                <button onclick="removeItem('${i.cart_item_id}')" style="background:none;border:none;color:var(--color-text-muted);cursor:pointer;"><i class="fas fa-times"></i></button>
+                            </div>
+                        `).join('')}</div>
+                        <div style="background:var(--color-surface);padding:1.5rem;border-radius:1rem;height:fit-content;">
+                            <h3 style="margin-bottom:1.5rem;">Summary</h3>
+                            <div style="display:flex;justify-content:space-between;padding:0.75rem 0;border-bottom:1px solid var(--glass-border);"><span>Subtotal</span><span>${Utils.formatPrice(subtotal)}</span></div>
+                            <div style="display:flex;justify-content:space-between;padding:0.75rem 0;border-bottom:1px solid var(--glass-border);"><span>Shipping</span><span>${shipping ? Utils.formatPrice(shipping) : '<span style="color:var(--color-success);">FREE</span>'}</span></div>
+                            <div style="display:flex;justify-content:space-between;padding:1rem 0;font-size:1.25rem;font-weight:700;color:var(--color-accent);"><span>Total</span><span>${Utils.formatPrice(subtotal + shipping)}</span></div>
+                            <a href="checkout.html" class="btn btn-primary btn-lg w-full">Checkout</a>
+                        </div>
+                    </div>`;
+            } catch (e) { container.innerHTML = '<p>Failed to load cart</p>'; }
+        }
+
+        async function updateQty(id, qty) {
+            if (qty < 1) { removeItem(id); return; }
+            try { await API.updateCartQuantity(id, qty); loadCart(); } catch (e) { Utils.showToast(e.message, 'error'); }
+        }
+
+        async function removeItem(id) {
+            try { await API.removeFromCart(id); loadCart(); } catch (e) { Utils.showToast(e.message, 'error'); }
+        }
+    </script>
+</body>
+
+</html>
