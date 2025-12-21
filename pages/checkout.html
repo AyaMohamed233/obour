@@ -95,12 +95,15 @@
                     <div id="order-items"></div>
                     <div style="border-top: 1px solid var(--glass-border); padding-top: 1rem; margin-top: 1rem;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span>Subtotal</span><span id="subtotal">0</span></div>
+                            <span>Subtotal</span><span id="subtotal">0</span>
+                        </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span>Shipping</span><span id="shipping">0</span></div>
+                            <span>Shipping</span><span id="shipping">0</span>
+                        </div>
                         <div
                             style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 700; color: var(--color-accent); padding-top: 1rem; border-top: 1px solid var(--glass-border);">
-                            <span>Total</span><span id="total">0</span></div>
+                            <span>Total</span><span id="total">0</span>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-lg w-full" style="margin-top: 1.5rem;"
                         id="place-order-btn">Place Order</button>
@@ -177,7 +180,7 @@
                         cardEl.style.display = 'block';
                         if (!stripe) {
                             // Note: This is a placeholder - you need to add your Stripe publishable key
-                            stripe = Stripe('pk_test_placeholder');
+                            stripe = Stripe('pk_test_51SfeGtD0EbpHK5rdl9s3OrN5yTiuLWD9WuQOHgJtxT29J9DRGoeIq8K6rsxOHZfiVV2EZm7uRSSzmAQOPmc3Zj8A00uh6wrZVe');
                             const elements = stripe.elements();
                             cardElement = elements.create('card', { style: { base: { color: '#E8E4E0', fontSize: '16px' } } });
                             cardElement.mount('#card-element');

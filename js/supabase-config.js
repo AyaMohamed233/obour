@@ -8,8 +8,8 @@
 const SUPABASE_URL = 'https://qoqcprnrtmiswpertraw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvcWNwcm5ydG1pc3dwZXJ0cmF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzA2NTQsImV4cCI6MjA4MTYwNjY1NH0.JqpTiQZZWYeq9mJW9Dj708J0_0MuI3pJrnVqX3qrSBQ';
 
-// Initialize Supabase Client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize Supabase Client (using different name to avoid conflict with CDN's window.supabase)
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /**
  * Store Configuration
@@ -30,7 +30,7 @@ const STORE_CONFIG = {
 const API = {
     // Products
     async getProducts(options = {}) {
-        let query = supabase
+        let query = supabaseClient
             .from('products')
             .select(`
                 *,
@@ -66,7 +66,7 @@ const API = {
     },
 
     async getProductBySlug(slug) {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('products')
             .select(`
                 *,
@@ -87,7 +87,7 @@ const API = {
     },
 
     async getSaleProducts(limit = 12) {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('sales')
             .select(`
                 *,
@@ -110,7 +110,7 @@ const API = {
 
     // Categories
     async getCategories() {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('categories')
             .select('*')
             .eq('is_active', true)
@@ -122,7 +122,7 @@ const API = {
 
     // Brands
     async getBrands() {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('brands')
             .select('*')
             .eq('is_active', true)
@@ -134,10 +134,10 @@ const API = {
 
     // Cart
     async getCart() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return [];
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('get_cart_details', { p_user_id: user.id });
 
         if (error) throw error;
@@ -145,10 +145,10 @@ const API = {
     },
 
     async addToCart(productId, colorId, quantity) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login to add items to cart');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('add_to_cart', {
                 p_user_id: user.id,
                 p_product_id: productId,
@@ -161,10 +161,10 @@ const API = {
     },
 
     async updateCartQuantity(cartItemId, quantity) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('update_cart_quantity', {
                 p_user_id: user.id,
                 p_cart_item_id: cartItemId,
@@ -176,10 +176,10 @@ const API = {
     },
 
     async removeFromCart(cartItemId) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('remove_from_cart', {
                 p_user_id: user.id,
                 p_cart_item_id: cartItemId
@@ -191,10 +191,10 @@ const API = {
 
     // Orders
     async createOrder(addressId, paymentMethod, shippingMethodId, couponCode = null, notes = null) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login to place order');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('create_order_from_cart', {
                 p_user_id: user.id,
                 p_address_id: addressId,
@@ -209,10 +209,10 @@ const API = {
     },
 
     async getOrders() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return [];
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('orders')
             .select(`
                 *,
@@ -226,10 +226,10 @@ const API = {
     },
 
     async getOrderById(orderId) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('orders')
             .select(`
                 *,
@@ -246,10 +246,10 @@ const API = {
 
     // Coupons
     async validateCoupon(code, subtotal, itemCount = 1) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('validate_coupon', {
                 p_code: code,
                 p_user_id: user.id,
@@ -263,7 +263,7 @@ const API = {
 
     // Reviews
     async getProductReviews(productId, page = 1, limit = 10, sortBy = 'newest') {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('get_product_reviews', {
                 p_product_id: productId,
                 p_page: page,
@@ -276,7 +276,7 @@ const API = {
     },
 
     async getReviewStats(productId) {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('get_review_stats', { p_product_id: productId });
 
         if (error) throw error;
@@ -285,10 +285,10 @@ const API = {
 
     // Wishlist
     async getWishlist() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return [];
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('wishlists')
             .select(`
                 *,
@@ -306,10 +306,10 @@ const API = {
     },
 
     async addToWishlist(productId) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('wishlists')
             .upsert({ user_id: user.id, product_id: productId })
             .select();
@@ -319,10 +319,10 @@ const API = {
     },
 
     async removeFromWishlist(productId) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login');
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('wishlists')
             .delete()
             .eq('user_id', user.id)
@@ -334,10 +334,10 @@ const API = {
 
     // User Profile & Addresses
     async getProfile() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return null;
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('profiles')
             .select('*')
             .eq('id', user.id)
@@ -348,10 +348,10 @@ const API = {
     },
 
     async updateProfile(updates) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('profiles')
             .update(updates)
             .eq('id', user.id)
@@ -363,10 +363,10 @@ const API = {
     },
 
     async getAddresses() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return [];
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('addresses')
             .select('*')
             .eq('user_id', user.id)
@@ -378,10 +378,10 @@ const API = {
     },
 
     async addAddress(address) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('addresses')
             .insert({ ...address, user_id: user.id })
             .select()
@@ -393,7 +393,7 @@ const API = {
 
     // Shipping Methods
     async getShippingMethods() {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('shipping_methods')
             .select('*')
             .eq('is_active', true)
@@ -405,7 +405,7 @@ const API = {
 
     // Site Settings & Content
     async getSettings() {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('get_public_settings');
 
         if (error) throw error;
@@ -413,7 +413,7 @@ const API = {
     },
 
     async getBanners(position = 'hero') {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('get_active_banners', { p_position: position });
 
         if (error) throw error;
@@ -421,7 +421,7 @@ const API = {
     },
 
     async getFAQ() {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('faq')
             .select('*')
             .eq('is_active', true)
@@ -432,7 +432,7 @@ const API = {
     },
 
     async getPage(slug) {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('static_pages')
             .select('*')
             .eq('slug', slug)
@@ -445,7 +445,7 @@ const API = {
 
     // Contact
     async submitContactForm(formData) {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('contact_messages')
             .insert(formData)
             .select()
@@ -457,7 +457,7 @@ const API = {
 
     // Newsletter
     async subscribeNewsletter(email, name = null) {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .rpc('subscribe_newsletter', {
                 p_email: email,
                 p_name: name,
@@ -470,10 +470,10 @@ const API = {
 
     // Track product view
     async trackProductView(productId) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) return;
 
-        await supabase.rpc('track_product_view', {
+        await supabaseClient.rpc('track_product_view', {
             p_user_id: user.id,
             p_product_id: productId
         });
@@ -485,7 +485,7 @@ const API = {
  */
 const Auth = {
     async signUp(email, password, metadata = {}) {
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await supabaseClient.auth.signUp({
             email,
             password,
             options: {
@@ -497,7 +497,7 @@ const Auth = {
     },
 
     async signIn(email, password) {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
             email,
             password
         });
@@ -506,7 +506,7 @@ const Auth = {
     },
 
     async signInWithGoogle() {
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: window.location.origin
@@ -517,22 +517,22 @@ const Auth = {
     },
 
     async signOut() {
-        const { error } = await supabase.auth.signOut();
+        const { error } = await supabaseClient.auth.signOut();
         if (error) throw error;
     },
 
     async getUser() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         return user;
     },
 
     async getSession() {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabaseClient.auth.getSession();
         return session;
     },
 
     async resetPassword(email) {
-        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
             redirectTo: `${window.location.origin}/pages/reset-password.html`
         });
         if (error) throw error;
@@ -540,7 +540,7 @@ const Auth = {
     },
 
     async updatePassword(newPassword) {
-        const { data, error } = await supabase.auth.updateUser({
+        const { data, error } = await supabaseClient.auth.updateUser({
             password: newPassword
         });
         if (error) throw error;
@@ -548,7 +548,7 @@ const Auth = {
     },
 
     onAuthStateChange(callback) {
-        return supabase.auth.onAuthStateChange(callback);
+        return supabaseClient.auth.onAuthStateChange(callback);
     }
 };
 
@@ -616,7 +616,7 @@ const Utils = {
 };
 
 // Export for use in other modules
-window.supabaseClient = supabase;
+window.supabaseClient = supabaseClient;
 window.API = API;
 window.Auth = Auth;
 window.Utils = Utils;
