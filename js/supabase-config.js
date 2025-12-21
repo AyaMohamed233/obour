@@ -194,18 +194,85 @@ const API = {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Please login to place order');
 
-        const { data, error } = await supabaseClient
-            .rpc('create_order_from_cart', {
-                p_user_id: user.id,
-                p_address_id: addressId,
-                p_payment_method: paymentMethod,
-                p_shipping_method_id: shippingMethodId,
-                p_coupon_code: couponCode,
-                p_customer_notes: notes
-            });
+        // Get cart items first
+        const cart = await this.getCart();
+        if (!cart || cart.length === 0) throw new Error('Cart is empty');
 
-        if (error) throw error;
-        return data;
+        // Get user profile for customer info
+        const profile = await this.getProfile();
+
+        // Get address for shipping info
+        const { data: address } = await supabaseClient
+            .from('addresses')
+            .select('*')
+            .eq('id', addressId)
+            .single();
+
+        // Calculate totals
+        const subtotal = cart.reduce((sum, item) => sum + (item.line_total || item.quantity * item.unit_price), 0);
+        const shippingCost = subtotal >= 500 ? 0 : 50;
+        const total = subtotal + shippingCost;
+        const totalItems = cart.length;
+        const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+        // Generate order number
+        const orderNumber = 'ORD-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+
+        // Create order with all required fields
+        const { data: order, error: orderError } = await supabaseClient
+            .from('orders')
+            .insert({
+                user_id: user.id,
+                order_number: orderNumber,
+                address_id: addressId,
+                subtotal: subtotal,
+                shipping_cost: shippingCost,
+                total_amount: total,
+                total_items: totalItems,
+                total_quantity: totalQuantity,
+                payment_method: paymentMethod,
+                payment_status: 'pending',
+                status: 'pending',
+                // Required customer fields
+                customer_name: address?.recipient_name || profile?.full_name || user.email.split('@')[0],
+                customer_email: user.email,
+                customer_phone: address?.phone || profile?.phone || 'N/A',
+                // Optional shipping info from address
+                shipping_governorate: address?.governorate,
+                shipping_city: address?.city,
+                shipping_address: address?.street_address,
+                customer_notes: notes
+            })
+            .select()
+            .single();
+
+        if (orderError) throw orderError;
+
+        // Create order items
+        const orderItems = cart.map(item => ({
+            order_id: order.id,
+            product_id: item.product_id,
+            color_id: item.color_id,
+            product_name: item.product_name,
+            color_name: item.color_name,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.line_total || item.quantity * item.unit_price
+        }));
+
+        const { error: itemsError } = await supabaseClient
+            .from('order_items')
+            .insert(orderItems);
+
+        if (itemsError) throw itemsError;
+
+        // Clear cart
+        await supabaseClient
+            .from('cart_items')
+            .delete()
+            .eq('user_id', user.id);
+
+        return order.id;
     },
 
     async getOrders() {

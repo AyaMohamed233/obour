@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmed | Luxury Bags</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="../index.html" class="navbar-brand">LUXURY BAGS</a>
+            <ul class="navbar-nav">
+                <li><a href="../index.html" class="navbar-link">Home</a></li>
+                <li><a href="products.html" class="navbar-link">Shop</a></li>
+                <li><a href="account.html" class="navbar-link">My Account</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="success-section">
+        <div class="success-container">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h1>Order Confirmed!</h1>
+            <p class="success-subtitle">Thank you for your purchase</p>
+
+            <div class="order-info" id="order-info">
+                <div class="info-row">
+                    <span>Order Number:</span>
+                    <strong id="order-number">Loading...</strong>
+                </div>
+                <div class="info-row">
+                    <span>Status:</span>
+                    <span class="badge badge-primary" id="order-status">Pending</span>
+                </div>
+                <div class="info-row">
+                    <span>Total:</span>
+                    <strong id="order-total">-</strong>
+                </div>
+            </div>
+
+            <p class="success-message">
+                We've sent a confirmation to your email.
+                You can track your order status in your account.
+            </p>
+
+            <div class="success-actions">
+                <a href="account.html" class="btn btn-primary">View My Orders</a>
+                <a href="products.html" class="btn btn-secondary">Continue Shopping</a>
+            </div>
+        </div>
+    </section>
+
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const orderId = params.get('id');
+
+                if (!orderId) {
+                    window.location.href = 'products.html';
+                    return;
+                }
+
+                // Get order details
+                const { data: order, error } = await supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .eq('id', orderId)
+                    .single();
+
+                if (error || !order) {
+                    console.error('Order not found:', error);
+                    document.getElementById('order-number').textContent = 'Order Placed Successfully';
+                    return;
+                }
+
+                document.getElementById('order-number').textContent = order.order_number || orderId.slice(0, 8);
+                document.getElementById('order-status').textContent = order.status || 'Pending';
+                document.getElementById('order-total').textContent = Utils.formatPrice(order.total_amount);
+
+            } catch (error) {
+                console.error('Error loading order:', error);
+            }
+        });
+    </script>
+
+    <style>
+        .success-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: calc(72px + var(--space-8)) var(--space-4) var(--space-8);
+            background: var(--gradient-surface);
+        }
+
+        .success-container {
+            text-align: center;
+            max-width: 500px;
+            background: var(--color-surface);
+            padding: var(--space-12);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .success-icon {
+            font-size: 5rem;
+            color: var(--color-success);
+            margin-bottom: var(--space-6);
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        @keyframes scaleIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success-container h1 {
+            font-size: var(--text-3xl);
+            margin-bottom: var(--space-2);
+            color: var(--color-text);
+        }
+
+        .success-subtitle {
+            color: var(--color-text-muted);
+            margin-bottom: var(--space-8);
+        }
+
+        .order-info {
+            background: var(--color-bg);
+            padding: var(--space-6);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-6);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--space-3) 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .info-row:last-child {
+            border: none;
+        }
+
+        .info-row span:first-child {
+            color: var(--color-text-muted);
+        }
+
+        .success-message {
+            color: var(--color-text-muted);
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-8);
+            line-height: var(--leading-relaxed);
+        }
+
+        .success-actions {
+            display: flex;
+            gap: var(--space-4);
+            justify-content: center;
+        }
+
+        @media (max-width: 480px) {
+            .success-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</body>
+
+</html>

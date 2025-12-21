@@ -151,7 +151,7 @@
                 container.innerHTML = addresses.map(a => `
                     <div style="background: var(--color-surface); padding: 1.5rem; border-radius: 1rem; margin-bottom: 1rem;">
                         <p><strong>${a.recipient_name}</strong> ${a.is_default ? '<span class="badge badge-accent">Default</span>' : ''}</p>
-                        <p style="font-size: 0.875rem; color: var(--color-text-muted);">${a.address_line1}, ${a.city}, ${a.governorate}</p>
+                        <p style="font-size: 0.875rem; color: var(--color-text-muted);">${a.street_address}, ${a.city}, ${a.governorate}</p>
                         <p style="font-size: 0.875rem; color: var(--color-text-muted);">${a.phone}</p>
                     </div>
                 `).join('');

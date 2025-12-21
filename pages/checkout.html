@@ -159,7 +159,7 @@
                 container.innerHTML = addresses.map(a => `
                     <label style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem; background: var(--color-bg); border-radius: 0.5rem; margin-bottom: 0.5rem; cursor: pointer;">
                         <input type="radio" name="address" value="${a.id}" ${a.is_default ? 'checked' : ''} onchange="selectedAddressId='${a.id}'">
-                        <div><strong>${a.recipient_name}</strong><br><span style="font-size: 0.875rem; color: var(--color-text-muted);">${a.address_line1}, ${a.city}, ${a.governorate}</span></div>
+                        <div><strong>${a.recipient_name}</strong><br><span style="font-size: 0.875rem; color: var(--color-text-muted);">${a.street_address}, ${a.city}, ${a.governorate}</span></div>
                     </label>
                 `).join('');
             } else {
@@ -211,7 +211,7 @@
                         phone: document.getElementById('addr-phone').value,
                         governorate: document.getElementById('addr-gov').value,
                         city: document.getElementById('addr-city').value,
-                        address_line1: document.getElementById('addr-line').value,
+                        street_address: document.getElementById('addr-line').value,
                         is_default: true
                     });
                     selectedAddressId = newAddr.id;

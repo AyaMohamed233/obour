@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details | Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body style="background: var(--color-bg);">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-brand">ADMIN</div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link" data-section="dashboard"><i class="fas fa-chart-line"></i>
+                Dashboard</a>
+            <a href="index.html#orders" class="sidebar-link active"><i class="fas fa-box"></i> Orders</a>
+            <a href="index.html#products" class="sidebar-link"><i class="fas fa-tag"></i> Products</a>
+            <a href="index.html#customers" class="sidebar-link"><i class="fas fa-users"></i> Customers</a>
+            <a href="../index.html" class="sidebar-link"><i class="fas fa-store"></i> View Store</a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        <div class="page-header-admin">
+            <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Orders</a>
+            <h1>Order Details</h1>
+        </div>
+
+        <div class="order-detail-container" id="order-container">
+            <div class="skeleton" style="height: 400px;"></div>
+        </div>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        let order = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const user = await Auth.getUser();
+                if (!user) { window.location.href = '../pages/login.html'; return; }
+
+                const profile = await API.getProfile();
+                if (!profile?.is_admin) { window.location.href = '../index.html'; return; }
+
+                const params = new URLSearchParams(window.location.search);
+                const orderId = params.get('id');
+
+                if (!orderId) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                await loadOrder(orderId);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        async function loadOrder(orderId) {
+            try {
+                // Get order with items
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .select(`
+                        *,
+                        items:order_items(*, product:products(name, sku))
+                    `)
+                    .eq('id', orderId)
+                    .single();
+
+                if (error) throw error;
+                order = data;
+
+                renderOrder();
+            } catch (error) {
+                console.error('Error loading order:', error);
+                document.getElementById('order-container').innerHTML = `
+                    <div class="error-box">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Order not found</p>
+                        <a href="index.html" class="btn btn-primary">Back to Orders</a>
+                    </div>
+                `;
+            }
+        }
+
+        function renderOrder() {
+            const container = document.getElementById('order-container');
+
+            const statusColors = {
+                pending: 'warning',
+                confirmed: 'primary',
+                processing: 'primary',
+                shipped: 'info',
+                delivered: 'success',
+                cancelled: 'error'
+            };
+
+            container.innerHTML = `
+                <div class="order-grid">
+                    <!-- Order Info Card -->
+                    <div class="detail-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-receipt"></i> Order Information</h3>
+                            <span class="badge badge-${statusColors[order.status] || 'primary'}">${order.status}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row">
+                                <span>Order Number:</span>
+                                <strong>#${order.order_number}</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Date:</span>
+                                <strong>${new Date(order.created_at).toLocaleString('en-EG')}</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Payment Method:</span>
+                                <strong>${order.payment_method || 'N/A'}</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Payment Status:</span>
+                                <span class="badge badge-${order.payment_status === 'paid' ? 'success' : 'warning'}">${order.payment_status}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Info Card -->
+                    <div class="detail-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-user"></i> Customer Information</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row">
+                                <span>Name:</span>
+                                <strong>${order.customer_name}</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Email:</span>
+                                <strong>${order.customer_email}</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Phone:</span>
+                                <strong>${order.customer_phone}</strong>
+                            </div>
+                            ${order.customer_phone_alt ? `
+                            <div class="info-row">
+                                <span>Alt Phone:</span>
+                                <strong>${order.customer_phone_alt}</strong>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Shipping Info Card -->
+                    <div class="detail-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-truck"></i> Shipping Address</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row">
+                                <span>Governorate:</span>
+                                <strong>${order.shipping_governorate || 'N/A'}</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>City:</span>
+                                <strong>${order.shipping_city || 'N/A'}</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Address:</span>
+                                <strong>${order.shipping_address || 'N/A'}</strong>
+                            </div>
+                            ${order.shipping_building ? `
+                            <div class="info-row">
+                                <span>Building:</span>
+                                <strong>${order.shipping_building}</strong>
+                            </div>
+                            ` : ''}
+                            ${order.shipping_landmark ? `
+                            <div class="info-row">
+                                <span>Landmark:</span>
+                                <strong>${order.shipping_landmark}</strong>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Order Summary Card -->
+                    <div class="detail-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-calculator"></i> Order Summary</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-row">
+                                <span>Subtotal:</span>
+                                <strong>${Utils.formatPrice(order.subtotal)}</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Shipping:</span>
+                                <strong>${Utils.formatPrice(order.shipping_cost)}</strong>
+                            </div>
+                            ${order.discount_amount > 0 ? `
+                            <div class="info-row">
+                                <span>Discount:</span>
+                                <strong style="color: var(--color-success);">-${Utils.formatPrice(order.discount_amount)}</strong>
+                            </div>
+                            ` : ''}
+                            <div class="info-row total-row">
+                                <span>Total:</span>
+                                <strong>${Utils.formatPrice(order.total_amount)}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Items -->
+                <div class="detail-card full-width">
+                    <div class="card-header">
+                        <h3><i class="fas fa-shopping-bag"></i> Order Items (${order.items?.length || 0})</h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Color</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${order.items?.map(item => `
+                                    <tr>
+                                        <td>
+                                            <strong>${item.product_name}</strong>
+                                            ${item.product?.sku ? `<br><small style="color: var(--color-text-muted);">SKU: ${item.product.sku}</small>` : ''}
+                                        </td>
+                                        <td>${item.color_name || 'N/A'}</td>
+                                        <td>${item.quantity}</td>
+                                        <td>${Utils.formatPrice(item.unit_price)}</td>
+                                        <td><strong>${Utils.formatPrice(item.total_price)}</strong></td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="5">No items</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                ${order.customer_notes ? `
+                <div class="detail-card full-width">
+                    <div class="card-header">
+                        <h3><i class="fas fa-sticky-note"></i> Customer Notes</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>${order.customer_notes}</p>
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Actions -->
+                <div class="order-actions">
+                    <div class="action-group">
+                        <label>Update Status:</label>
+                        <select id="status-select" class="form-input" style="width: auto;">
+                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                            <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing</option>
+                            <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Shipped</option>
+                            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                            <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="updateStatus()">Update</button>
+                    </div>
+                    <button class="btn btn-secondary" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+                </div>
+            `;
+        }
+
+        async function updateStatus() {
+            const newStatus = document.getElementById('status-select').value;
+            try {
+                const { error } = await supabaseClient
+                    .from('orders')
+                    .update({ status: newStatus })
+                    .eq('id', order.id);
+
+                if (error) throw error;
+
+                order.status = newStatus;
+                Utils.showToast('Order status updated!', 'success');
+                renderOrder();
+            } catch (error) {
+                Utils.showToast('Failed to update status', 'error');
+            }
+        }
+    </script>
+    <style>
+        .admin-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 220px;
+            background: var(--color-surface);
+            padding: 1.5rem;
+        }
+
+        .sidebar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--color-text-muted);
+            border-radius: 0.5rem;
+            text-decoration: none;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background: var(--color-bg);
+            color: var(--color-accent);
+        }
+
+        .admin-main {
+            margin-left: 220px;
+            padding: 2rem;
+        }
+
+        .page-header-admin {
+            margin-bottom: 2rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--color-text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .back-link:hover {
+            color: var(--color-accent);
+        }
+
+        .order-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-card {
+            background: var(--color-surface);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        .detail-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: var(--color-bg);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .card-header h3 {
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-header h3 i {
+            color: var(--color-accent);
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .info-row:last-child {
+            border: none;
+        }
+
+        .info-row span:first-child {
+            color: var(--color-text-muted);
+        }
+
+        .info-row.total-row {
+            font-size: 1.25rem;
+            color: var(--color-accent);
+            border-top: 2px solid var(--glass-border);
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .data-table th {
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+        }
+
+        .order-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--color-surface);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .error-box {
+            text-align: center;
+            padding: 3rem;
+            background: var(--color-surface);
+            border-radius: 1rem;
+        }
+
+        .error-box i {
+            font-size: 3rem;
+            color: var(--color-error);
+            margin-bottom: 1rem;
+        }
+
+        @media print {
+
+            .admin-sidebar,
+            .order-actions,
+            .back-link {
+                display: none !important;
+            }
+
+            .admin-main {
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .order-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                display: none;
+            }
+
+            .admin-main {
+                margin-left: 0;
+            }
+        }
+    </style>
+</body>
+
+</html>
