@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add/Edit Product | Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body style="background: var(--color-bg);">
+    <aside class="admin-sidebar">
+        <div class="sidebar-brand">ADMIN</div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="sidebar-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+            <a href="index.html#orders" class="sidebar-link"><i class="fas fa-box"></i> Orders</a>
+            <a href="index.html#products" class="sidebar-link active"><i class="fas fa-tag"></i> Products</a>
+            <a href="index.html#customers" class="sidebar-link"><i class="fas fa-users"></i> Customers</a>
+            <a href="../index.html" class="sidebar-link"><i class="fas fa-store"></i> View Store</a>
+        </nav>
+    </aside>
+
+    <main class="admin-main">
+        <div class="page-header-admin">
+            <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Products</a>
+            <h1 id="page-title">Add New Product</h1>
+        </div>
+
+        <form id="product-form" class="product-form">
+            <!-- Basic Info -->
+            <div class="form-card">
+                <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="name">Product Name *</label>
+                        <input type="text" id="name" class="form-input" required
+                            placeholder="e.g., Classic Leather Bag">
+                    </div>
+                    <div class="form-group">
+                        <label for="slug">URL Slug *</label>
+                        <input type="text" id="slug" class="form-input" required
+                            placeholder="e.g., classic-leather-bag">
+                    </div>
+                    <div class="form-group">
+                        <label for="sku">SKU</label>
+                        <input type="text" id="sku" class="form-input" placeholder="e.g., BAG-001">
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category *</label>
+                        <select id="category" class="form-input" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="brand">Brand</label>
+                        <select id="brand" class="form-input">
+                            <option value="">Select Brand</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="form-card">
+                <h3><i class="fas fa-dollar-sign"></i> Pricing</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="price">Price (EGP) *</label>
+                        <input type="number" id="price" class="form-input" required min="0" step="0.01"
+                            placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="compare_price">Compare at Price (EGP)</label>
+                        <input type="number" id="compare_price" class="form-input" min="0" step="0.01"
+                            placeholder="Original price for showing discount">
+                    </div>
+                    <div class="form-group">
+                        <label for="cost">Cost (EGP)</label>
+                        <input type="number" id="cost" class="form-input" min="0" step="0.01"
+                            placeholder="Your cost price">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="form-card">
+                <h3><i class="fas fa-align-left"></i> Description</h3>
+                <div class="form-group">
+                    <label for="short_description">Short Description</label>
+                    <textarea id="short_description" class="form-input" rows="2"
+                        placeholder="Brief description for product cards"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="description">Full Description</label>
+                    <textarea id="description" class="form-input" rows="5"
+                        placeholder="Detailed product description"></textarea>
+                </div>
+            </div>
+
+            <!-- Images -->
+            <div class="form-card">
+                <h3><i class="fas fa-image"></i> Images</h3>
+                <div class="form-group">
+                    <label>Image URLs (one per line)</label>
+                    <textarea id="images" class="form-input" rows="4"
+                        placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"></textarea>
+                    <small class="form-hint">First image will be the primary image</small>
+                </div>
+            </div>
+
+            <!-- Colors & Stock -->
+            <div class="form-card">
+                <h3><i class="fas fa-palette"></i> Colors & Stock</h3>
+                <div id="colors-container">
+                    <div class="color-row">
+                        <input type="text" class="form-input color-name" placeholder="Color Name (e.g., Black)">
+                        <input type="color" class="color-picker" value="#000000">
+                        <input type="number" class="form-input color-quantity" placeholder="Quantity" min="0">
+                        <button type="button" class="btn btn-ghost btn-icon remove-color"
+                            onclick="removeColorRow(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addColorRow()">
+                    <i class="fas fa-plus"></i> Add Color
+                </button>
+            </div>
+
+            <!-- Settings -->
+            <div class="form-card">
+                <h3><i class="fas fa-cog"></i> Settings</h3>
+                <div class="form-grid">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="is_active" checked>
+                        <span>Active (visible in store)</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="is_featured">
+                        <span>Featured Product</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="is_new_arrival" checked>
+                        <span>New Arrival Badge</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn btn-ghost" onclick="window.location.href='index.html'">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save"></i> <span id="submit-text">Save Product</span>
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        let productId = null;
+        let categories = [];
+        let brands = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const user = await Auth.getUser();
+                if (!user) { window.location.href = '../pages/login.html'; return; }
+
+                const profile = await API.getProfile();
+                if (!profile?.is_admin) { window.location.href = '../index.html'; return; }
+
+                // Check if editing
+                const params = new URLSearchParams(window.location.search);
+                productId = params.get('id');
+
+                await loadCategories();
+                await loadBrands();
+
+                if (productId) {
+                    document.getElementById('page-title').textContent = 'Edit Product';
+                    document.getElementById('submit-text').textContent = 'Update Product';
+                    await loadProduct(productId);
+                }
+
+                setupForm();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        async function loadCategories() {
+            const { data } = await supabaseClient.from('categories').select('*').order('name');
+            categories = data || [];
+            const select = document.getElementById('category');
+            categories.forEach(c => {
+                select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+            });
+        }
+
+        async function loadBrands() {
+            const { data } = await supabaseClient.from('brands').select('*').order('name');
+            brands = data || [];
+            const select = document.getElementById('brand');
+            brands.forEach(b => {
+                select.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+            });
+        }
+
+        async function loadProduct(id) {
+            const { data: product, error } = await supabaseClient
+                .from('products')
+                .select('*, images:product_images(*), colors:product_colors(*)')
+                .eq('id', id)
+                .single();
+
+            if (error || !product) {
+                Utils.showToast('Product not found', 'error');
+                return;
+            }
+
+            // Fill form
+            document.getElementById('name').value = product.name || '';
+            document.getElementById('slug').value = product.slug || '';
+            document.getElementById('sku').value = product.sku || '';
+            document.getElementById('category').value = product.category_id || '';
+            document.getElementById('brand').value = product.brand_id || '';
+            document.getElementById('price').value = product.price || '';
+            document.getElementById('compare_price').value = product.compare_at_price || '';
+            document.getElementById('cost').value = product.cost || '';
+            document.getElementById('short_description').value = product.short_description || '';
+            document.getElementById('description').value = product.description || '';
+            document.getElementById('is_active').checked = product.is_active;
+            document.getElementById('is_featured').checked = product.is_featured;
+            document.getElementById('is_new_arrival').checked = product.is_new_arrival;
+
+            // Images
+            if (product.images?.length) {
+                document.getElementById('images').value = product.images.map(i => i.image_url).join('\n');
+            }
+
+            // Colors
+            const container = document.getElementById('colors-container');
+            container.innerHTML = '';
+            if (product.colors?.length) {
+                product.colors.forEach(c => {
+                    container.innerHTML += `
+                        <div class="color-row">
+                            <input type="text" class="form-input color-name" value="${c.color_name}" placeholder="Color Name">
+                            <input type="color" class="color-picker" value="${c.color_hex || '#000000'}">
+                            <input type="number" class="form-input color-quantity" value="${c.quantity}" placeholder="Quantity" min="0">
+                            <button type="button" class="btn btn-ghost btn-icon remove-color" onclick="removeColorRow(this)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+            } else {
+                addColorRow();
+            }
+        }
+
+        function addColorRow() {
+            const container = document.getElementById('colors-container');
+            container.innerHTML += `
+                <div class="color-row">
+                    <input type="text" class="form-input color-name" placeholder="Color Name (e.g., Black)">
+                    <input type="color" class="color-picker" value="#000000">
+                    <input type="number" class="form-input color-quantity" placeholder="Quantity" min="0">
+                    <button type="button" class="btn btn-ghost btn-icon remove-color" onclick="removeColorRow(this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        function removeColorRow(btn) {
+            const container = document.getElementById('colors-container');
+            if (container.children.length > 1) {
+                btn.closest('.color-row').remove();
+            }
+        }
+
+        function setupForm() {
+            // Auto-generate slug from name
+            document.getElementById('name').addEventListener('input', (e) => {
+                if (!productId) {
+                    const slug = e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-');
+                    document.getElementById('slug').value = slug;
+                }
+            });
+
+            // Form submit
+            document.getElementById('product-form').addEventListener('submit', handleSubmit);
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            const submitBtn = e.target.querySelector('[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                // Collect data
+                const productData = {
+                    name: document.getElementById('name').value,
+                    slug: document.getElementById('slug').value,
+                    sku: document.getElementById('sku').value || null,
+                    category_id: document.getElementById('category').value || null,
+                    brand_id: document.getElementById('brand').value || null,
+                    price: parseFloat(document.getElementById('price').value),
+                    compare_at_price: parseFloat(document.getElementById('compare_price').value) || null,
+                    cost: parseFloat(document.getElementById('cost').value) || null,
+                    short_description: document.getElementById('short_description').value || null,
+                    description: document.getElementById('description').value || null,
+                    is_active: document.getElementById('is_active').checked,
+                    is_featured: document.getElementById('is_featured').checked,
+                    is_new_arrival: document.getElementById('is_new_arrival').checked
+                };
+
+                let savedProductId;
+
+                if (productId) {
+                    // Update
+                    const { error } = await supabaseClient
+                        .from('products')
+                        .update(productData)
+                        .eq('id', productId);
+                    if (error) throw error;
+                    savedProductId = productId;
+                } else {
+                    // Insert
+                    const { data, error } = await supabaseClient
+                        .from('products')
+                        .insert(productData)
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    savedProductId = data.id;
+                }
+
+                // Handle images
+                const imageUrls = document.getElementById('images').value
+                    .split('\n')
+                    .map(url => url.trim())
+                    .filter(url => url);
+
+                if (imageUrls.length > 0) {
+                    // Delete existing images if editing
+                    if (productId) {
+                        await supabaseClient.from('product_images').delete().eq('product_id', savedProductId);
+                    }
+
+                    // Insert new images
+                    const imageData = imageUrls.map((url, i) => ({
+                        product_id: savedProductId,
+                        image_url: url,
+                        is_primary: i === 0,
+                        sort_order: i
+                    }));
+                    await supabaseClient.from('product_images').insert(imageData);
+                }
+
+                // Handle colors
+                const colorRows = document.querySelectorAll('.color-row');
+                const colors = [];
+                colorRows.forEach(row => {
+                    const name = row.querySelector('.color-name').value.trim();
+                    const hex = row.querySelector('.color-picker').value;
+                    const qty = parseInt(row.querySelector('.color-quantity').value) || 0;
+                    if (name) {
+                        colors.push({
+                            product_id: savedProductId,
+                            color_name: name,
+                            color_hex: hex,
+                            quantity: qty,
+                            is_active: true
+                        });
+                    }
+                });
+
+                if (colors.length > 0) {
+                    // Delete existing colors if editing
+                    if (productId) {
+                        await supabaseClient.from('product_colors').delete().eq('product_id', savedProductId);
+                    }
+                    await supabaseClient.from('product_colors').insert(colors);
+                }
+
+                Utils.showToast(productId ? 'Product updated!' : 'Product created!', 'success');
+                setTimeout(() => window.location.href = 'index.html', 1500);
+
+            } catch (error) {
+                console.error('Error saving product:', error);
+                Utils.showToast(error.message || 'Failed to save product', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> <span id="submit-text">Save Product</span>';
+            }
+        }
+    </script>
+    <style>
+        .admin-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 220px;
+            background: var(--color-surface);
+            padding: 1.5rem;
+        }
+
+        .sidebar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--color-text-muted);
+            border-radius: 0.5rem;
+            text-decoration: none;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background: var(--color-bg);
+            color: var(--color-accent);
+        }
+
+        .admin-main {
+            margin-left: 220px;
+            padding: 2rem;
+            max-width: 900px;
+        }
+
+        .page-header-admin {
+            margin-bottom: 2rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--color-text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .back-link:hover {
+            color: var(--color-accent);
+        }
+
+        .form-card {
+            background: var(--color-surface);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-card h3 {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-card h3 i {
+            color: var(--color-accent);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .form-hint {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+        }
+
+        .color-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+
+        .color-row .color-name {
+            flex: 2;
+        }
+
+        .color-row .color-quantity {
+            flex: 1;
+        }
+
+        .color-picker {
+            width: 50px;
+            height: 40px;
+            padding: 0;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            accent-color: var(--color-accent);
+            width: 18px;
+            height: 18px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .admin-sidebar {
+                display: none;
+            }
+
+            .admin-main {
+                margin-left: 0;
+            }
+        }
+    </style>
+</body>
+
+</html>

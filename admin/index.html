@@ -77,7 +77,10 @@
 
         <!-- Products Section -->
         <section id="products-section" class="admin-section">
-            <h1>Products</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h1 style="margin: 0;">Products</h1>
+                <a href="product-form.html" class="btn btn-primary"><i class="fas fa-plus"></i> Add Product</a>
+            </div>
             <div id="products-table" class="products-table"></div>
         </section>
 
@@ -155,7 +158,18 @@
 
         async function loadProducts() {
             const { data: products } = await supabaseClient.from('products').select('*, category:categories(name)').order('created_at', { ascending: false });
-            document.getElementById('products-table').innerHTML = products?.length ? `<table class="data-table"><thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th></tr></thead><tbody>${products.map(p => `<tr><td>${p.name}</td><td>${p.category?.name || '-'}</td><td>${Utils.formatPrice(p.price)}</td><td>${p.total_stock || 0}</td><td><span class="badge badge-${p.is_active ? 'success' : 'error'}">${p.is_active ? 'Active' : 'Inactive'}</span></td></tr>`).join('')}</tbody></table>` : '<p>No products</p>';
+            document.getElementById('products-table').innerHTML = products?.length ? `<table class="data-table"><thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody>${products.map(p => `<tr><td>${p.name}</td><td>${p.category?.name || '-'}</td><td>${Utils.formatPrice(p.price)}</td><td>${p.total_stock || 0}</td><td><span class="badge badge-${p.is_active ? 'success' : 'error'}">${p.is_active ? 'Active' : 'Inactive'}</span></td><td><a href="product-form.html?id=${p.id}" class="btn btn-sm btn-secondary"><i class="fas fa-edit"></i> Edit</a> <button onclick="deleteProduct('${p.id}')" class="btn btn-sm btn-ghost" style="color: var(--color-error);"><i class="fas fa-trash"></i></button></td></tr>`).join('')}</tbody></table>` : '<p>No products. <a href="product-form.html">Add your first product</a></p>';
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Are you sure you want to delete this product?')) return;
+            try {
+                await supabaseClient.from('products').delete().eq('id', id);
+                Utils.showToast('Product deleted!', 'success');
+                loadProducts();
+            } catch (e) {
+                Utils.showToast('Failed to delete product', 'error');
+            }
         }
 
         async function loadCustomers() {
