@@ -390,6 +390,13 @@
                         await supabaseClient.from('product_colors').delete().eq('product_id', savedProductId);
                     }
                     await supabaseClient.from('product_colors').insert(colors);
+
+                    // Update total_stock in products table
+                    const totalStock = colors.reduce((sum, c) => sum + c.quantity, 0);
+                    await supabaseClient
+                        .from('products')
+                        .update({ total_stock: totalStock })
+                        .eq('id', savedProductId);
                 }
 
                 Utils.showToast(productId ? 'Product updated!' : 'Product created!', 'success');
