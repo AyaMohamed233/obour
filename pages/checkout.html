@@ -145,7 +145,7 @@
             if (!cart.length) { window.location.href = 'cart.html'; return; }
 
             const subtotal = cart.reduce((s, i) => s + i.line_total, 0);
-            const shipping = subtotal >= 500 ? 0 : 50;
+            const shipping = 0; // Free shipping
 
             document.getElementById('order-items').innerHTML = cart.map(i => `
                 <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem;">
@@ -156,8 +156,8 @@
             `).join('');
 
             document.getElementById('subtotal').textContent = Utils.formatPrice(subtotal);
-            document.getElementById('shipping').innerHTML = shipping ? Utils.formatPrice(shipping) : '<span style="color:var(--color-success);">FREE</span>';
-            document.getElementById('total').textContent = Utils.formatPrice(subtotal + shipping);
+            document.getElementById('shipping').innerHTML = '<span style="color:var(--color-success);">FREE</span>';
+            document.getElementById('total').textContent = Utils.formatPrice(subtotal);
         }
 
         async function loadAddresses() {
@@ -215,10 +215,9 @@
                 const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
                 const notes = document.getElementById('order-notes').value;
 
-                // Calculate total
+                // Calculate total (Free shipping)
                 const subtotal = cart.reduce((s, i) => s + i.line_total, 0);
-                const shipping = subtotal >= 500 ? 0 : 50;
-                const total = subtotal + shipping;
+                const total = subtotal; // Free shipping
 
                 // Create order first
                 const orderId = await API.createOrder(selectedAddressId, paymentMethod, null, null, notes);
