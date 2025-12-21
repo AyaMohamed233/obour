@@ -2,6 +2,7 @@
 // This function handles Paymob payment integration for Egypt
 // Supports: Credit Cards, Mobile Wallets (Vodafone Cash, Orange, Etisalat)
 
+// @ts-ignore - Deno imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -11,15 +12,19 @@ const corsHeaders = {
 
 const PAYMOB_API_URL = 'https://accept.paymob.com/api'
 
-serve(async (req) => {
+serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
 
     try {
+        // @ts-ignore - Deno env
         const PAYMOB_API_KEY = Deno.env.get('PAYMOB_API_KEY')
+        // @ts-ignore - Deno env
         const CARD_INTEGRATION_ID = Deno.env.get('PAYMOB_CARD_INTEGRATION_ID')
+        // @ts-ignore - Deno env
         const WALLET_INTEGRATION_ID = Deno.env.get('PAYMOB_WALLET_INTEGRATION_ID')
+        // @ts-ignore - Deno env
         const IFRAME_ID = Deno.env.get('PAYMOB_IFRAME_ID')
 
         if (!PAYMOB_API_KEY) {
@@ -99,7 +104,7 @@ serve(async (req) => {
                         state: billingData?.governorate || 'Cairo'
                     },
                     currency: 'EGP',
-                    integration_id: parseInt(integrationId),
+                    integration_id: parseInt(integrationId || '0'),
                     lock_order_when_paid: true
                 })
             })
@@ -140,10 +145,11 @@ serve(async (req) => {
 
         throw new Error('Invalid action')
 
-    } catch (error) {
-        console.error('Paymob Error:', error)
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error('Paymob Error:', errorMessage)
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: errorMessage }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         )
     }
