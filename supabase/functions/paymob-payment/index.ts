@@ -1,9 +1,7 @@
 // Supabase Edge Function: paymob-payment
 // This function handles Paymob payment integration for Egypt
-// Supports: Credit Cards, Mobile Wallets (Vodafone Cash, Orange, Etisalat)
 
-// @ts-ignore - Deno imports
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -12,23 +10,22 @@ const corsHeaders = {
 
 const PAYMOB_API_URL = 'https://accept.paymob.com/api'
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
 
     try {
-        // @ts-ignore - Deno env
         const PAYMOB_API_KEY = Deno.env.get('PAYMOB_API_KEY')
-        // @ts-ignore - Deno env
         const CARD_INTEGRATION_ID = Deno.env.get('PAYMOB_CARD_INTEGRATION_ID')
-        // @ts-ignore - Deno env
         const WALLET_INTEGRATION_ID = Deno.env.get('PAYMOB_WALLET_INTEGRATION_ID')
-        // @ts-ignore - Deno env
         const IFRAME_ID = Deno.env.get('PAYMOB_IFRAME_ID')
 
         if (!PAYMOB_API_KEY) {
-            throw new Error('Missing PAYMOB_API_KEY')
+            return new Response(
+                JSON.stringify({ error: 'Missing PAYMOB_API_KEY in secrets' }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+            )
         }
 
         const { action, ...data } = await req.json()
@@ -40,7 +37,20 @@ serve(async (req: Request) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ api_key: PAYMOB_API_KEY })
             })
+
             const authData = await authResponse.json()
+
+            // Check if authentication failed
+            if (!authResponse.ok || !authData.token) {
+                return new Response(
+                    JSON.stringify({
+                        error: 'Paymob auth failed',
+                        status: authResponse.status,
+                        details: authData
+                    }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+                )
+            }
 
             return new Response(
                 JSON.stringify({ token: authData.token }),
@@ -50,7 +60,7 @@ serve(async (req: Request) => {
 
         // Step 2: Create Order
         if (action === 'create_order') {
-            const { token, amount, orderId, items } = data
+            const { token, amount, orderId } = data
 
             const orderResponse = await fetch(`${PAYMOB_API_URL}/ecommerce/orders`, {
                 method: 'POST',
@@ -61,10 +71,17 @@ serve(async (req: Request) => {
                     amount_cents: Math.round(amount * 100),
                     currency: 'EGP',
                     merchant_order_id: orderId,
-                    items: items || []
+                    items: []
                 })
             })
             const orderData = await orderResponse.json()
+
+            if (!orderResponse.ok || !orderData.id) {
+                return new Response(
+                    JSON.stringify({ error: 'Create order failed', details: orderData }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+                )
+            }
 
             return new Response(
                 JSON.stringify({ order_id: orderData.id }),
@@ -75,10 +92,7 @@ serve(async (req: Request) => {
         // Step 3: Get Payment Key
         if (action === 'payment_key') {
             const { token, paymobOrderId, amount, billingData, paymentMethod } = data
-
-            const integrationId = paymentMethod === 'wallet'
-                ? (WALLET_INTEGRATION_ID || CARD_INTEGRATION_ID)
-                : CARD_INTEGRATION_ID
+            const integrationId = paymentMethod === 'wallet' ? WALLET_INTEGRATION_ID : CARD_INTEGRATION_ID
 
             const paymentKeyResponse = await fetch(`${PAYMOB_API_URL}/acceptance/payment_keys`, {
                 method: 'POST',
@@ -89,68 +103,66 @@ serve(async (req: Request) => {
                     expiration: 3600,
                     order_id: paymobOrderId,
                     billing_data: {
-                        apartment: billingData?.apartment || 'N/A',
-                        email: billingData?.email || 'customer@example.com',
-                        floor: billingData?.floor || 'N/A',
-                        first_name: billingData?.firstName || 'Customer',
-                        street: billingData?.street || 'N/A',
-                        building: billingData?.building || 'N/A',
+                        apartment: 'N/A',
+                        email: billingData?.email || 'test@test.com',
+                        floor: 'N/A',
+                        first_name: billingData?.firstName || 'Test',
+                        street: 'N/A',
+                        building: 'N/A',
                         phone_number: billingData?.phone || '01000000000',
                         shipping_method: 'N/A',
-                        postal_code: billingData?.postalCode || '00000',
+                        postal_code: '00000',
                         city: billingData?.city || 'Cairo',
                         country: 'EG',
-                        last_name: billingData?.lastName || 'Name',
-                        state: billingData?.governorate || 'Cairo'
+                        last_name: billingData?.lastName || 'User',
+                        state: 'Cairo'
                     },
                     currency: 'EGP',
                     integration_id: parseInt(integrationId || '0'),
                     lock_order_when_paid: true
                 })
             })
-            const paymentKeyData = await paymentKeyResponse.json()
+            const paymentData = await paymentKeyResponse.json()
+
+            if (!paymentKeyResponse.ok || !paymentData.token) {
+                return new Response(
+                    JSON.stringify({ error: 'Payment key failed', details: paymentData }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+                )
+            }
 
             return new Response(
-                JSON.stringify({
-                    payment_key: paymentKeyData.token,
-                    iframe_id: IFRAME_ID,
-                    integration_id: integrationId
-                }),
+                JSON.stringify({ payment_key: paymentData.token, iframe_id: IFRAME_ID }),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 
-        // For wallet payment
+        // Wallet payment
         if (action === 'wallet_pay') {
             const { paymentKey, phoneNumber } = data
-
             const walletResponse = await fetch(`${PAYMOB_API_URL}/acceptance/payments/pay`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    source: {
-                        identifier: phoneNumber,
-                        subtype: 'WALLET'
-                    },
+                    source: { identifier: phoneNumber, subtype: 'WALLET' },
                     payment_token: paymentKey
                 })
             })
-            const walletData = await walletResponse.json()
-
             return new Response(
-                JSON.stringify(walletData),
+                JSON.stringify(await walletResponse.json()),
                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
 
-        throw new Error('Invalid action')
-
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        console.error('Paymob Error:', errorMessage)
         return new Response(
-            JSON.stringify({ error: errorMessage }),
+            JSON.stringify({ error: 'Invalid action' }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        )
+
+    } catch (error) {
+        return new Response(
+            JSON.stringify({ error: String(error) }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
         )
     }
 })
