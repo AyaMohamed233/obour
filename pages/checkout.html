@@ -118,11 +118,16 @@
         let cart = [], addresses = [], selectedAddressId = null, stripe, cardElement;
 
         document.addEventListener('DOMContentLoaded', async () => {
-            const user = await Auth.getUser();
-            if (!user) { window.location.href = 'login.html'; return; }
+            try {
+                const user = await Auth.getUser();
+                if (!user) { window.location.href = 'login.html'; return; }
 
-            await Promise.all([loadCart(), loadAddresses(), loadShipping()]);
-            setupPayment();
+                await Promise.all([loadCart(), loadAddresses(), loadShipping()]);
+                setupPayment();
+            } catch (error) {
+                console.error('Failed to load checkout:', error);
+                Utils.showToast('Failed to load checkout data', 'error');
+            }
         });
 
         async function loadCart() {

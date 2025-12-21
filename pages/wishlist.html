@@ -43,9 +43,13 @@
     <script src="../js/supabase-config.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const user = await Auth.getUser();
-            if (!user) { window.location.href = 'login.html'; return; }
-            loadWishlist();
+            try {
+                const user = await Auth.getUser();
+                if (!user) { window.location.href = 'login.html'; return; }
+                loadWishlist();
+            } catch (error) {
+                console.error('Failed to load wishlist:', error);
+            }
         });
 
         async function loadWishlist() {

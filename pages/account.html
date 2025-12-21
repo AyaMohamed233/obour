@@ -93,18 +93,23 @@
         let profile = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
-            const user = await Auth.getUser();
-            if (!user) { window.location.href = 'login.html'; return; }
+            try {
+                const user = await Auth.getUser();
+                if (!user) { window.location.href = 'login.html'; return; }
 
-            profile = await API.getProfile();
-            document.getElementById('user-name').textContent = profile?.full_name || 'User';
-            document.getElementById('user-email').textContent = user.email;
-            document.getElementById('user-avatar').textContent = (profile?.full_name || 'U')[0].toUpperCase();
-            document.getElementById('profile-name').value = profile?.full_name || '';
-            document.getElementById('profile-phone').value = profile?.phone || '';
+                profile = await API.getProfile();
+                document.getElementById('user-name').textContent = profile?.full_name || 'User';
+                document.getElementById('user-email').textContent = user.email;
+                document.getElementById('user-avatar').textContent = (profile?.full_name || 'U')[0].toUpperCase();
+                document.getElementById('profile-name').value = profile?.full_name || '';
+                document.getElementById('profile-phone').value = profile?.phone || '';
 
-            loadOrders();
-            loadAddresses();
+                loadOrders();
+                loadAddresses();
+            } catch (error) {
+                console.error('Failed to load account:', error);
+                Utils.showToast('Failed to load account data', 'error');
+            }
         });
 
         function showTab(tab) {

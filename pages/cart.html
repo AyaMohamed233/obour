@@ -42,9 +42,13 @@
     <script src="../js/supabase-config.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const user = await Auth.getUser();
-            if (!user) { window.location.href = 'login.html'; return; }
-            loadCart();
+            try {
+                const user = await Auth.getUser();
+                if (!user) { window.location.href = 'login.html'; return; }
+                loadCart();
+            } catch (error) {
+                console.error('Failed to load cart:', error);
+            }
         });
 
         async function loadCart() {

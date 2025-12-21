@@ -151,15 +151,19 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            // Check URL params for initial filters
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('category')) currentFilters.category = params.get('category');
-            if (params.get('brand')) currentFilters.brand = params.get('brand');
+            try {
+                // Check URL params for initial filters
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('category')) currentFilters.category = params.get('category');
+                if (params.get('brand')) currentFilters.brand = params.get('brand');
 
-            await loadFilters();
-            await loadProducts();
-            setupEventListeners();
-            updateAuthUI();
+                await loadFilters();
+                await loadProducts();
+                setupEventListeners();
+                updateAuthUI();
+            } catch (error) {
+                console.error('Failed to initialize products page:', error);
+            }
         });
 
         async function updateAuthUI() {

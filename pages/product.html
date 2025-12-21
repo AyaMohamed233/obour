@@ -69,15 +69,19 @@
         let quantity = 1;
 
         document.addEventListener('DOMContentLoaded', async () => {
-            const params = new URLSearchParams(window.location.search);
-            const slug = params.get('slug');
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const slug = params.get('slug');
 
-            if (!slug) {
-                window.location.href = 'products.html';
-                return;
+                if (!slug) {
+                    window.location.href = 'products.html';
+                    return;
+                }
+
+                await loadProduct(slug);
+            } catch (error) {
+                console.error('Failed to load product page:', error);
             }
-
-            await loadProduct(slug);
         });
 
         async function loadProduct(slug) {
