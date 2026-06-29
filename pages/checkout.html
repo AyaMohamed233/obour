@@ -17,7 +17,7 @@
 <body>
     <nav class="navbar">
         <div class="navbar-container">
-            <a href="../index.html" class="navbar-brand">LUXURY BAGS</a>
+            <a href="../index.html" class="navbar-brand" style="display:flex; align-items:center;"><img src="../logo.png" alt="Luxury Bags Logo" style="height: 65px; margin-top: 15px; margin-right: -15px; margin-left: -10px; transform: scale(1.5); transform-origin: center;"> LUXURY BAGS</a>
             <div class="navbar-actions">
                 <a href="cart.html" class="navbar-icon"><i class="fas fa-arrow-left"></i> Back to Cart</a>
             </div>
@@ -38,11 +38,11 @@
                         <div id="addresses-list"></div>
                         <div id="new-address-form" style="display: none;">
                             <div class="form-group"><label class="form-label">Full Name</label><input type="text"
-                                    class="form-input" id="addr-name" required></div>
+                                    class="form-input" id="addr-name"></div>
                             <div class="form-group"><label class="form-label">Phone</label><input type="tel"
-                                    class="form-input" id="addr-phone" required></div>
+                                    class="form-input" id="addr-phone"></div>
                             <div class="form-group"><label class="form-label">Governorate</label>
-                                <select class="form-input" id="addr-gov" required>
+                                <select class="form-input" id="addr-gov">
                                     <option value="">Select</option>
                                     <option value="Cairo">Cairo</option>
                                     <option value="Alexandria">Alexandria</option>
@@ -51,9 +51,9 @@
                                 </select>
                             </div>
                             <div class="form-group"><label class="form-label">City</label><input type="text"
-                                    class="form-input" id="addr-city" required></div>
+                                    class="form-input" id="addr-city"></div>
                             <div class="form-group"><label class="form-label">Address</label><textarea
-                                    class="form-input" id="addr-line" rows="2" required></textarea></div>
+                                    class="form-input" id="addr-line" rows="2"></textarea></div>
                         </div>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="toggleAddressForm()"
                             id="add-address-btn">+ Add New Address</button>
@@ -124,8 +124,14 @@
     <script src="../js/supabase-config.js"></script>
     <script>
         let cart = [], addresses = [], selectedAddressId = null;
-        const PAYMOB_IFRAME_ID = '986999';
-        const EDGE_FUNCTION_URL = 'https://qoqcprnrtmiswpertraw.supabase.co/functions/v1/paymob-payment';
+        const PAYMOB_IFRAME_ID = '986998';
+        const EDGE_FUNCTION_URL = 'https://wtxrezufftbrvgjwxmqe.supabase.co/functions/v1/paymob-checkout';
+        const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0eHJlenVmZnRicnZnand4bXFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NDQ2OTIsImV4cCI6MjA5ODMyMDY5Mn0.H_mqVZD47APcme1Yc72Tnn0IqC2m3aMyUGJGbOWaq-g';
+        const EDGE_HEADERS = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON}`,
+            'apikey': SUPABASE_ANON
+        };
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
@@ -224,6 +230,7 @@
 
                 // Handle payment based on method
                 if (paymentMethod === 'cod') {
+                    await API.clearCart();
                     Utils.showToast('Order placed successfully!', 'success');
                     setTimeout(() => window.location.href = `order-success.html?id=${orderId}`, 1500);
                 }
@@ -247,20 +254,23 @@
                 // Step 1: Get auth token
                 const authRes = await fetch(EDGE_FUNCTION_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: EDGE_HEADERS,
                     body: JSON.stringify({ action: 'auth' })
                 });
                 const authData = await authRes.json();
-                console.log('Paymob Auth Response:', authData);
+                console.log('Paymob Auth Response:', JSON.stringify(authData, null, 2));
                 if (!authData.token) {
-                    throw new Error(authData.error || authData.details?.message || 'Failed to authenticate with Paymob');
+                    const errorMsg = authData.error || authData.details?.message || JSON.stringify(authData);
+                    console.error('Paymob Auth Error Details:', errorMsg);
+                    alert('Paymob Error: ' + errorMsg);
+                    throw new Error(errorMsg);
                 }
                 const token = authData.token;
 
                 // Step 2: Create order
                 const orderRes = await fetch(EDGE_FUNCTION_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: EDGE_HEADERS,
                     body: JSON.stringify({
                         action: 'create_order',
                         token,
@@ -273,7 +283,7 @@
                 // Step 3: Get payment key
                 const paymentRes = await fetch(EDGE_FUNCTION_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: EDGE_HEADERS,
                     body: JSON.stringify({
                         action: 'payment_key',
                         token,
@@ -306,7 +316,7 @@
 
                     const walletRes = await fetch(EDGE_FUNCTION_URL, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: EDGE_HEADERS,
                         body: JSON.stringify({
                             action: 'wallet_pay',
                             paymentKey: payment_key,

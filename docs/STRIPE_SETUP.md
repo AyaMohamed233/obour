@@ -30,7 +30,7 @@ supabase login
 
 ```bash
 cd D:\AI\store
-supabase link --project-ref qoqcprnrtmiswpertraw
+supabase link --project-ref wtxrezufftbrvgjwxmqe
 ```
 
 ### Step 4: Set Environment Variables
@@ -60,7 +60,7 @@ supabase functions deploy stripe-webhook
 
 1. Go to **Stripe Dashboard** → **Developers** → **Webhooks**
 2. Click **Add endpoint**
-3. URL: `https://qoqcprnrtmiswpertraw.supabase.co/functions/v1/stripe-webhook`
+3. URL: `https://wtxrezufftbrvgjwxmqe.supabase.co/functions/v1/stripe-webhook`
 4. Select events:
    - `payment_intent.succeeded`
    - `payment_intent.payment_failed`
@@ -74,7 +74,7 @@ supabase functions deploy stripe-webhook
 ```javascript
 // 1. Create PaymentIntent
 const response = await fetch(
-  'https://qoqcprnrtmiswpertraw.supabase.co/functions/v1/create-payment-intent',
+  'https://wtxrezufftbrvgjwxmqe.supabase.co/functions/v1/create-payment-intent',
   {
     method: 'POST',
     headers: {

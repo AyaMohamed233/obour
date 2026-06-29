@@ -123,9 +123,22 @@ async function loadCategories() {
     try {
         const categories = await API.getCategories();
 
-        grid.innerHTML = categories.slice(0, 5).map(cat => `
+        const categoryImages = {
+            'Tote Bags': 'tote_bag_category.png',
+            'Handbags': 'handbag_category.png',
+            'Crossbody Bags': 'https://images.unsplash.com/photo-1591561954555-607968c989ab?w=400',
+            'Backpacks': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400',
+            'Clutches': 'https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=400',
+            'Shoulder Bags': 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400'
+        };
+
+        grid.innerHTML = categories.slice(0, 5).map(cat => {
+            const defaultImage = 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400';
+            const imageSrc = cat.image_url || categoryImages[cat.name] || defaultImage;
+            
+            return `
             <a href="pages/products.html?category=${cat.slug}" class="category-card">
-                <img src="${cat.image_url || 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400'}" alt="${cat.name}">
+                <img src="${imageSrc}" alt="${cat.name}">
                 <div class="category-card-overlay">
                     <div>
                         <div class="category-card-title">${cat.name}</div>
@@ -133,7 +146,8 @@ async function loadCategories() {
                     </div>
                 </div>
             </a>
-        `).join('');
+            `;
+        }).join('');
     } catch (error) {
         console.error('Failed to load categories:', error);
         grid.innerHTML = '<p class="text-center text-muted">Failed to load categories</p>';

@@ -5,8 +5,8 @@
  */
 
 // Supabase Configuration
-const SUPABASE_URL = 'https://qoqcprnrtmiswpertraw.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvcWNwcm5ydG1pc3dwZXJ0cmF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzA2NTQsImV4cCI6MjA4MTYwNjY1NH0.JqpTiQZZWYeq9mJW9Dj708J0_0MuI3pJrnVqX3qrSBQ';
+const SUPABASE_URL = 'https://wtxrezufftbrvgjwxmqe.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0eHJlenVmZnRicnZnand4bXFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NDQ2OTIsImV4cCI6MjA5ODMyMDY5Mn0.H_mqVZD47APcme1Yc72Tnn0IqC2m3aMyUGJGbOWaq-g';
 
 // Initialize Supabase Client (using different name to avoid conflict with CDN's window.supabase)
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -266,13 +266,17 @@ const API = {
 
         if (itemsError) throw itemsError;
 
-        // Clear cart
+        return order.id;
+    },
+
+    async clearCart() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
+
         await supabaseClient
             .from('cart_items')
             .delete()
             .eq('user_id', user.id);
-
-        return order.id;
     },
 
     async getOrders() {

@@ -55,7 +55,7 @@ supabase functions deploy paymob-payment
 1. اذهبي إلى **Developers → Webhooks**
 2. أضيفي URL:
    ```
-   https://qoqcprnrtmiswpertraw.supabase.co/functions/v1/paymob-webhook
+   https://wtxrezufftbrvgjwxmqe.supabase.co/functions/v1/paymob-webhook
    ```
 3. اختاري Events: Transaction, Order
 
